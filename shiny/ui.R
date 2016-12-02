@@ -2,6 +2,14 @@ library(shiny)
 
 shinyUI(fluidPage(
     titlePanel("Educational inequality around the world"),
+    sidebarLayout(
+    sidebarPanel(
+      "For comments, suggestions or collaborations, feel free to contact me at",
+      a("cimentadaj@gmail.com", href = "cimentadaj@gmail.com"), "or visit my website at",
+      a("www.jorgecimentada.com", href = "www.jorgecimentada.com"),
+      ".", "Any commits are welcome at the apps",
+      a("Github repository", href = "https://github.com/cimentadaj/Inequality_Shinyapp")
+      ),
       mainPanel(
         p("For quite some time public and academic interest on educational inequality
           has been growing. The objective of this app is to help inform researchers
@@ -19,7 +27,6 @@ shinyUI(fluidPage(
         p("The theoretical argument behind this graph comes from the work of John Roemer while the idea
           behind the graph
           comes from Bradbury, Corak, Waldfogel and Washbrook (2015)."),
-        br(),
         p("In a country,
           suppose we give a national examiniation, so all children took the same test on mathematics, for example.
           Suppose we separate all children into three rooms based on their parents education: low educated,
@@ -30,11 +37,19 @@ shinyUI(fluidPage(
           Let's ask the children to come out of the rooms and stand next to their corresponding
           ranking from the other rooms, so that the 1st child of all three groups are together and so on.
           Finally, each child carries a sign that shows their score on the test."),
-          p("The interesting thing about this exercises is that if family background and parental education had",
+        p("The interesting thing about this exercises is that if family background and parental education had",
           strong("nothing"), "to do with the child's performance, we should expect
           that, on average, similar rankings should have similar scores. The farther each ranking-pair
-          is from each other, the stronger the family background-effect is. We can see a graphical example here:"),
-        img(src = "belgium.png", width = 800, height = 600)
+          is from each other, the stronger the family background-effect is.",
+        p("We can see a graphical example here:"),
+        div(img(src = "belgium.png", width = 900, height = 600, align = "left"), style="text-align: center;"),
+        p("For example, the 50th rank from middle class has 53 more points than the lower class.
+          On top of that, the 50th rank from high class has 55 more points than the middle class.
+          This graph serves as an intuitive measurement of the level of educational inequality in a country:
+          the more separated the colored lines, the higher the achievement inequality. Feel free to explore
+          your countries level of inequality and see how it's evolved over time.")
+        )
+      )
     )
   )
 )
