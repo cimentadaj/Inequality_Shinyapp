@@ -1,11 +1,12 @@
 library(shiny)
 
-shinyUI(fluidPage(
+shinyUI(
+  tabsetPanel(
+    tabPanel("Introduction",
+    fluidPage(
     titlePanel("Educational inequality around the world"),
     sidebarLayout(
     sidebarPanel(
-      uiOutput('input1'),
-      uiOutput('input2'),
       "For comments, suggestions or collaborations, feel free to contact me at",
       a("cimentadaj@gmail.com", href = "cimentadaj@gmail.com"), "or visit my website at",
       a("www.jorgecimentada.com", href = "http://www.jorgecimentada.com"),
@@ -46,7 +47,7 @@ shinyUI(fluidPage(
         p("The interesting thing about this exercises is that if family background and parental education had",
           strong("nothing"), "to do with the child's performance, we should expect
           that, on average, similar rankings should have similar scores. The farther each ranking-pair
-          is from each other, the stronger the family background-effect is.",
+          is from each other, the stronger the family background-effect is."),
         p("We can see a graphical example here:"),
         div(img(src = "belgium.png", width = 800, height = 600, align = "left"), style="text-align: center;"),
         br(),
@@ -56,10 +57,13 @@ shinyUI(fluidPage(
           On top of that, the 50th rank from the high class (red line) has 55 more points than the middle class.
           This graph serves as an intuitive measurement of the degree of educational inequality in a country:
           the more separated the colored lines are, the higher the achievement inequality. Feel free to explore
-          your countries' level of inequality and see how it's evolved over time."),
-        plotOutput("graph")
-        )
-      )
+          your countries' level of inequality and see how it's evolved over time."))))),
+        tabPanel("Graphics",
+                 fluidPage(sidebarLayout(
+                           sidebarPanel(
+                           uiOutput('input1'),
+                           uiOutput('input2')),
+                           mainPanel(plotOutput("graph"))))
     )
   )
 )

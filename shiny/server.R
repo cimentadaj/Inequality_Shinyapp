@@ -30,6 +30,7 @@ shinyServer(function(input, output) {
                                     "Middle educated",
                                     "High educated")) +
     scale_alpha(guide = F) +
+    xlim(0, 1000) +
     theme_scientific() +
     theme(plot.title = element_text(hjust = 0.5),
           legend.position = c(0.85, 0.2))
