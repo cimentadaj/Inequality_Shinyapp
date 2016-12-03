@@ -4,10 +4,16 @@ shinyUI(fluidPage(
     titlePanel("Educational inequality around the world"),
     sidebarLayout(
     sidebarPanel(
+      uiOutput('input1'),
+      uiOutput('input2'),
       "For comments, suggestions or collaborations, feel free to contact me at",
       a("cimentadaj@gmail.com", href = "cimentadaj@gmail.com"), "or visit my website at",
-      a("www.jorgecimentada.com", href = "www.jorgecimentada.com"),
-      ".", "Any commits are welcome at the apps",
+      a("www.jorgecimentada.com", href = "http://www.jorgecimentada.com"),
+      ".",
+      br(),
+      br(),
+      br(),
+      "Any commits are welcome at the apps",
       a("Github repository", href = "https://github.com/cimentadaj/Inequality_Shinyapp")
       ),
       mainPanel(
@@ -42,12 +48,16 @@ shinyUI(fluidPage(
           that, on average, similar rankings should have similar scores. The farther each ranking-pair
           is from each other, the stronger the family background-effect is.",
         p("We can see a graphical example here:"),
-        div(img(src = "belgium.png", width = 900, height = 600, align = "left"), style="text-align: center;"),
-        p("For example, the 50th rank from middle class has 53 more points than the lower class.
-          On top of that, the 50th rank from high class has 55 more points than the middle class.
-          This graph serves as an intuitive measurement of the level of educational inequality in a country:
-          the more separated the colored lines, the higher the achievement inequality. Feel free to explore
-          your countries level of inequality and see how it's evolved over time.")
+        div(img(src = "belgium.png", width = 800, height = 600, align = "left"), style="text-align: center;"),
+        br(),
+        br(),
+        p("The graph already shows the position of the 50th rank of the lower educated children.
+          The 50th rank of the middle class (green line), for example, has 53 more points than the lower class.
+          On top of that, the 50th rank from the high class (red line) has 55 more points than the middle class.
+          This graph serves as an intuitive measurement of the degree of educational inequality in a country:
+          the more separated the colored lines are, the higher the achievement inequality. Feel free to explore
+          your countries' level of inequality and see how it's evolved over time."),
+        plotOutput("graph")
         )
       )
     )
