@@ -6,115 +6,135 @@ library(downloader)
 library(car)
 library(Hmisc)
 library(artyfarty)
+library(stringr)
 
 # 
 # ###### 2013 ###########
-# # Please check this link before running. This url depends heavily on folders and datasets which are
-# # outline there.
-# 
-# llece <- "https://raw.githubusercontent.com/cimentadaj/LLECE/master/TERCE/Experimental%20TERCE.r"
-# downloader::source_url(llece, sha = sha_url(llece))
-# 
-# terce <- terce("/Users/cimentadaj/Downloads/terce")
-# 
-# big <- function (data, var1, var2) {
-#   attach(data)
-#   out <- ifelse(is.na(var1) & is.na(var2), NA,
-#                 ifelse(is.na(var1) & !is.na(var2), var2,
-#                        ifelse(!is.na(var1) & is.na(var2), var1,
-#                               ifelse(var1 > var2, var1, var2))))
-#   detach(data)
-#   out
-# }
-# 
-# terce <- rename(terce,  sesp = dqfit09_01_family, sesm = dqfit09_02_family)
-# 
-# terce$ses <- big(terce, sesp, sesm)
-# terce$ses2 <- car::recode(terce$ses, "1:2 = 1; 3:4 = 2; 5:6 = 3; 7 = NA")
-# 
-# terce$genero <- terce$genero - 1
-# 
-# terce$teacher_edu <- car::recode(terce$dqpit01_mteacher, "1:2 = 1; 3:4 = 2; 5:6 = 3; 7 = NA")
-# terce$country <- car::recode(terce$country, "
-#                              'ARG' = 'Argentina';
-#                              'BRA' = 'Brazil';
-#                              'CHL' = 'Chile';
-#                              'COL' = 'Colombia';
-#                              'CRI' = 'Costa Rica';
-#                              'ECU' = 'Ecuador';
-#                              'GTM' = 'Guatemala';
-#                              'HON' = 'Honduras';
-#                              'MEX' = 'Mexico';
-#                              'NIC' = 'Nicaragua';
-#                              'NLE' = 'Nuevo Leon';
-#                              'PAN' = 'Panama';
-#                              'PAR' = 'Paraguay';
-#                              'PER' = 'Peru';
-#                              'REP' = 'Dominican Republic';
-#                              'URU' = 'Uruguay'")
-# 
-# terce <- terce %>%
-#   select(ses2, country, puntaje_estandar_math, puntaje_estandar_language, wgm_math,
-#          wgl_language) %>%
-#   filter(!is.na(ses2) & !is.na(country)) %>%
-#   group_by(country, ses2) %>%
-#   do(data.frame(score = wtd.quantile(.$puntaje_estandar_math, weights = .$wgm_math, probs = seq(0, 1, 0.01)))) %>%
-#   ungroup(country, ses2) %>%
-#   mutate(rank = rep(0:100, length(unique(country)) * length(unique(ses2))),
-#          year = "2013")
-# 
+# Please check this link before running. This url depends heavily on folders and datasets which are
+# outline there.
+
+llece <- "https://raw.githubusercontent.com/cimentadaj/LLECE/master/TERCE/Experimental%20TERCE.r"
+downloader::source_url(llece, sha = sha_url(llece))
+
+terce <- terce("/Users/cimentadaj/Downloads/terce")
+
+big <- function (data, var1, var2) {
+  attach(data)
+  out <- ifelse(is.na(var1) & is.na(var2), NA,
+                ifelse(is.na(var1) & !is.na(var2), var2,
+                       ifelse(!is.na(var1) & is.na(var2), var1,
+                              ifelse(var1 > var2, var1, var2))))
+  detach(data)
+  out
+}
+
+terce <- rename(terce,  sesp = dqfit09_01_family, sesm = dqfit09_02_family)
+
+terce$ses <- big(terce, sesp, sesm)
+terce$ses2 <- car::recode(terce$ses, "1:2 = 1; 3:4 = 2; 5:6 = 3; 7 = NA")
+
+terce$genero <- terce$genero - 1
+
+terce$teacher_edu <- car::recode(terce$dqpit01_mteacher, "1:2 = 1; 3:4 = 2; 5:6 = 3; 7 = NA")
+terce$country <- car::recode(terce$country, "
+                             'ARG' = 'Argentina';
+                             'BRA' = 'Brazil';
+                             'CHL' = 'Chile';
+                             'COL' = 'Colombia';
+                             'CRI' = 'Costa Rica';
+                             'ECU' = 'Ecuador';
+                             'GTM' = 'Guatemala';
+                             'HON' = 'Honduras';
+                             'MEX' = 'Mexico';
+                             'NIC' = 'Nicaragua';
+                             'NLE' = 'Nuevo Leon (Mexico)';
+                             'PAN' = 'Panama';
+                             'PAR' = 'Paraguay';
+                             'PER' = 'Peru';
+                             'REP' = 'Dominican Republic';
+                             'URU' = 'Uruguay'")
+
+terce <- terce %>%
+  select(ses2, country, puntaje_estandar_math, puntaje_estandar_language, wgm_math,
+         wgl_language) %>%
+  filter(!is.na(ses2) & !is.na(country)) %>%
+  group_by(country, ses2) %>%
+  do(data.frame(score = quantile(.$puntaje_estandar_math, probs = seq(0, 1, 0.01), na.rm = T))) %>%
+  ungroup(country, ses2) %>%
+  mutate(rank = rep(0:100, length(unique(country)) * length(unique(ses2))),
+         year = "2013",
+         survey = "LLECE")
+
 # ###############
 # 
 # ##### 2007 #######
 # # load serce function
-# 
-# serce_dir <- "https://raw.githubusercontent.com/cimentadaj/LLECE/master/SERCE/Exploratory_SERCE.R"
-# downloader::source_url(serce_dir, sha = sha_url(serce_dir))
-# 
-# serce <- serce("/Users/cimentadaj/Downloads/serce/SERCE/")
-# 
-# changer <- function(df, father, var_name) {
-#   # GEt the logitcal data frame in which the education is located
-#   logical_data <- df[grep(father, grep("qf_item_2_*", names(df), value = T), value = T)] == 1
-#   # Pick the highest education towards the end of the data frame
-#   df[var_name] <- max.col(logical_data, ties.method = "last")
-#   
-#   # Many respondents had empty rows yet the max.col assigned
-#   # them an education level. Let's assign an NA to those which had a row
-#   # full of NOT 1's
-#   
-#   row_logical <- apply(logical_data, 1, sum)
-#   df[, var_name] <- ifelse(row_logical != 0, df[, var_name], NA)
-#   
-#   df[, var_name]
-# }
-# 
-# serce$sesp <- changer(serce, "a_family", "sesp")
-# serce$sesm <- changer(serce, "b_family", "sesm")
-# 
-# big <- function (data, var1, var2) {
-#   attach(data)
-#   out <- ifelse(is.na(var1) & is.na(var2), NA,
-#                 ifelse(is.na(var1) & !is.na(var2), var2,
-#                        ifelse(!is.na(var1) & is.na(var2), var1,
-#                               ifelse(var1 > var2, var1, var2))))
-#   detach(data)
-#   out
-# }
-# 
-# serce$ses <- big(serce, sesp, sesm)
-# serce$ses2 <- car::recode(as.numeric(serce$ses), "1:3 = 1; 4:5 = 2; 6:7 = 3")
-# serce$year <- "2006"
-# 
-# serce <- serce %>%
-#   select(ses2, country, puntaje_estandar_final_lscore, puntaje_estandar_final_mscore,
-#          peso_estudiante_lscore, peso_estudiante_mscore) %>%
-#   filter(!is.na(ses2) & !is.na(country)) %>%
-#   group_by(country, ses2) %>%
-#   do(data.frame(score = wtd.quantile(.$puntaje_estandar_final_lscore, weights = .$peso_estudiante_lscore, probs = seq(0, 1, 0.01)))) %>%
-#   ungroup(country, ses2) %>%
-#   mutate(rank = rep(0:100, length(unique(country)) * length(unique(ses2)))
-#          year = "2007")
+
+serce_dir <- "https://raw.githubusercontent.com/cimentadaj/LLECE/master/SERCE/Exploratory_SERCE.R"
+downloader::source_url(serce_dir, sha = sha_url(serce_dir))
+
+serce <- serce("/Users/cimentadaj/Downloads/serce/SERCE/")
+
+changer <- function(df, father, var_name) {
+  # GEt the logitcal data frame in which the education is located
+  logical_data <- df[grep(father, grep("qf_item_2_*", names(df), value = T), value = T)] == 1
+  # Pick the highest education towards the end of the data frame
+  df[var_name] <- max.col(logical_data, ties.method = "last")
+
+  # Many respondents had empty rows yet the max.col assigned
+  # them an education level. Let's assign an NA to those which had a row
+  # full of NOT 1's
+
+  row_logical <- apply(logical_data, 1, sum)
+  df[, var_name] <- ifelse(row_logical != 0, df[, var_name], NA)
+
+  df[, var_name]
+}
+
+serce$sesp <- changer(serce, "a_family", "sesp")
+serce$sesm <- changer(serce, "b_family", "sesm")
+
+big <- function (data, var1, var2) {
+  attach(data)
+  out <- ifelse(is.na(var1) & is.na(var2), NA,
+                ifelse(is.na(var1) & !is.na(var2), var2,
+                       ifelse(!is.na(var1) & is.na(var2), var1,
+                              ifelse(var1 > var2, var1, var2))))
+  detach(data)
+  out
+}
+
+serce$ses <- big(serce, sesp, sesm)
+serce$ses2 <- car::recode(as.numeric(serce$ses), "1:3 = 1; 4:5 = 2; 6:7 = 3")
+serce$country <- car::recode(serce$country, "
+                             '01' = 'Argentina';
+                             '03' = 'Brazil';
+                             '04' = 'Chile';
+                             '05' = 'Colombia';
+                             '06' = 'Costa Rica';
+                             '07' = 'Cuba';
+                             '08' = 'Ecuador';
+                             '09' = 'El Salvador';
+                             '11' = 'Guatemala';
+                             '12' = 'Mexico';
+                             '14' = 'Nicaragua';
+                             '16' = 'Panama';
+                             '17' = 'Paraguay';
+                             '18' = 'Peru';
+                             '19' = 'Dominican Republic';
+                             '20' = 'Uruguay';
+                             '21' = 'Nuevo Leon (Mexico)'")
+
+serce <- serce %>%
+  select(ses2, country, puntaje_estandar_final_lscore, puntaje_estandar_final_mscore,
+         peso_estudiante_lscore, peso_estudiante_mscore) %>%
+  filter(!is.na(ses2) & !is.na(country)) %>%
+  group_by(country, ses2) %>%
+  do(data.frame(score = quantile(.$puntaje_estandar_final_mscore, probs = seq(0, 1, 0.01), na.rm = T))) %>%
+  ungroup(country, ses2) %>%
+  mutate(rank = rep(0:100, length(unique(country)) * length(unique(ses2))),
+         year = "2007",
+         survey = "LLECE")
 # 
 # ##############
 # 
@@ -192,9 +212,9 @@ pisa_preparer <- function(df, vars_select, father_edu, mother_edu, edu_recode) {
   data <- pisa_complete %>%
     filter(!is.na(country) & !is.na(ses2)) %>%
     group_by(country, ses2) %>%
-    do(data.frame(score = wtd.quantile(.$pv1math, weights = .$w_fstuwt, probs = seq(0, 1, 0.01)))) %>%
+    do(data.frame(score = quantile(.$pv1math, probs = seq(0, 1, 0.01), na.rm = T))) %>%
     ungroup(country, ses2) %>%
-    mutate(rank = rep(0:100, length(unique(country))*length(unique(ses2))))
+    mutate(rank = rep(seq(0, 100, by = 1), length(unique(country))*length(unique(ses2))))
   
   data
 }
@@ -490,14 +510,90 @@ pisa[[1]]$country <- capital(pisa[[1]]$country)
 # specification instead of the numbers. PIRLS and TIMMSS are still missing.
 
 pisa_all <- do.call(rbind, pisa)
+pisa_all$survey <- "PISA"
 
-write_csv(pisa_all, path = "/Users/cimentadaj/Downloads/inequality/shiny/data/pisa.csv")
+country_names <- c("Afghanistan", "Aland Islands", "Albania", "Algeria", "American Samoa",
+                   "Andorra", "Angola", "Anguilla", "Antarctica", "Antigua", "Argentina",
+                   "Armenia", "Aruba", "Australia", "Austria", "Azerbaijan", "Bahamas",
+                   "Bahrain", "Bangladesh", "Barbados", "Barbuda", "Belarus", "Belgium",
+                   "Belize", "Benin", "Bermuda", "Bhutan", "Bolivia", "Bosnia", "Botswana",
+                   "Bouvet Island", "Brazil", "British Indian Ocean Trty.", "Brunei Darussalam",
+                   "Bulgaria", "Burkina Faso", "Burundi", "Caicos Islands", "Cambodia",
+                   "Cameroon", "Canada", "Cape Verde", "Cayman Islands", "Perm",
+                   "Central African Republic", "Chad", "Chile", "Christmas Island",
+                   "Cocos (Keeling) Islands", "Colombia", "Comoros", "Congo", "Miranda-Venezuela",
+                   "Congo, Democratic Republic of the", "Cook Islands", "Costa Rica",
+                   "Cote d'Ivoire", "Croatia", "Cuba", "Cyprus", "Czech Republic",
+                   "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador",
+                   "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia",
+                   "Ethiopia", "Falkland Islands (Malvinas)", "Faroe Islands", "Fiji",
+                   "Finland", "France", "French Guiana", "French Polynesia",
+                   "French Southern Territories", "Futuna Islands", "Gabon",
+                   "Gambia", "Georgia", "Germany", "Ghana", "Gibraltar", "Greece",
+                   "Greenland", "Grenada", "Guadeloupe", "Guam", "Guatemala",
+                   "Guernsey", "Guinea", "Guinea-Bissau", "Guyana", "Haiti",
+                   "Heard", "Herzegovina", "Holy See", "Honduras", "Hong Kong",
+                   "Hungary", "Iceland", "Indonesia",
+                   "Iran (Islamic Republic of)", "Iraq", "Ireland", "Isle of Man",
+                   "Israel", "Italy", "Jamaica", "Jan Mayen Islands", "Japan",
+                   "Jersey", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Korea",
+                   "Korea (Democratic)", "Kuwait", "Kyrgyzstan", "Lao", "Latvia",
+                   "Lebanon", "Lesotho", "Liberia", "Libyan Arab Jamahiriya",
+                   "Liechtenstein", "Lithuania", "Luxembourg", "Macedonia",
+                   "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali",
+                   "Malta", "Marshall Islands", "Martinique", "Mauritania",
+                   "Mauritius", "Mayotte", "McDonald Islands", "Mexico",
+                   "Micronesia", "Miquelon", "Moldova", "Monaco", "Mongolia",
+                   "Montenegro", "Montserrat", "Morocco", "Mozambique",
+                   "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands",
+                   "Netherlands Antilles", "Nevis", "New Caledonia",
+                   "New Zealand", "Nicaragua", "Niger", "Nigeria",
+                   "Niue", "Norfolk Island", "Northern Mariana Islands",
+                   "Norway", "Oman", "Pakistan", "Palau",
+                   "Palestinian Territory, Occupied", "Panama", "Papua New Guinea",
+                   "Paraguay", "Peru", "Philippines", "Pitcairn", "Poland",
+                   "Portugal", "Principe", "Puerto Rico", "Qatar", "Reunion",
+                   "Romania", "Russian Federation", "Rwanda", "Saint Barthelemy",
+                   "Saint Helena", "Saint Kitts", "Saint Lucia",
+                   "Saint Martin (French part)", "Saint Pierre", "Saint Vincent",
+                   "Samoa", "San Marino", "Sao Tome", "Saudi Arabia", "Senegal",
+                   "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia",
+                   "Slovenia", "Solomon Islands", "Somalia", "South Africa",
+                   "South Georgia", "South Sandwich Islands", "Spain", "Sri Lanka",
+                   "Sudan", "Suriname", "Svalbard", "Swaziland", "Sweden",
+                   "Switzerland", "Syrian Arab Republic", "Taiwan", "Tajikistan",
+                   "Tanzania", "Thailand", "The Grenadines", "Timor-Leste",
+                   "Trinidad and Tobago", "Togo", "Tokelau", "Tonga", "Tunisia",
+                   "Turkey", "Turkmenistan", "Turks Islands", "Tuvalu", "Uganda",
+                   "Ukraine", "United Arab Emirates", "United Kingdom",
+                   "United States", "Uruguay", "US Minor Outlying Islands",
+                   "Uzbekistan", "Vanuatu", "Vatican City State",
+                   "Vietnam", "Virgin Islands (British)", "Virgin Islands (US)",
+                   "Wallis", "Western Sahara", "Yemen", "Zambia", "Zimbabwe",
+                   "Macao", "Tamil Nadu-India",
+                   "Himachal Pradesh-India", "China-Shanghai", "Chinese Taipei")
+
+
+string_replacer <- function(pattern, replacement, vec) {
+  vec[grep(pattern, vec)] <- replacement
+  vec
+}
+
+for (i in seq_along(country_names)) pisa_all$country <- string_replacer(country_names[i],
+                                                                        country_names[i],
+                                                                        pisa_all$country)
+pisa_all$country <- gsub("Honk", "Hong", pisa_all$country)
+pisa_all$country <- gsub("Slovak Republic", "Slovakia", pisa_all$country)
+
+pisa_all <- rbind(pisa_all, terce, serce)
+
+write_csv(pisa_all, path = "/Users/cimentadaj/Downloads/inequality/shiny/pisa.csv")
 
 pisa_all %>%
   filter(country == "Belgium", year == "2009") %>%
   mutate(ses2 = as.factor(ses2)) %>%
-  ggplot(aes(score, rank, colour = as.factor(ses2), alpha = 0.05)) +
-  geom_point() +
+  ggplot(aes(score, rank, colour = as.factor(ses2))) +
+  geom_point(alpha = 0.7, size = 2) +
   ylab("Student ranking") +
   xlab("Math test score") +
   ggtitle("Inequality for Belgium in 2009") +
@@ -512,7 +608,15 @@ pisa_all %>%
                arrow = arrow(length = unit(0.1, "cm")),
                color = "#666666") +
   theme_scientific() +
-  theme(plot.title = element_text(hjust = 0.5),
-        legend.position = c(0.85, 0.2))
+  theme(plot.title = element_text(size = 18, hjust = 0.5, face = "bold"),
+        legend.position = c(0.85, 0.2),
+        axis.text=element_text(size=18),
+        axis.title=element_text(size=18,face="bold"),
+        legend.text=element_text(size=14),
+        legend.title = element_text(size=14))
 
-ggsave("belgium.png", device = "png", path = "/Users/cimentadaj/Downloads/inequality/www/")
+ggsave("belgium.png", path = "/Users/cimentadaj/Downloads/inequality/shiny/www/")
+
+# remove country duplicate names
+# join TERCE and SERCE
+# checkout why there's no variability in the quantiles of some countries.
