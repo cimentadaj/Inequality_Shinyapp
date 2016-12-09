@@ -148,7 +148,7 @@ library("PISA2003lite")
 library("PISA2006lite")
 library("PISA2009lite")
 library("PISA2012lite")
-# For pisa 2000, CNT is COUNTRY and PV1SCIE is not in the math data
+# For pisa 2000, CNT is COUNTRY
 
 parent_edu <- "MISCED|FISCED"
 edu_recode <- "1:3 = 1; 4:5 = 2; 6:7 = 3; else = NA"
@@ -869,6 +869,8 @@ install_github("pbiecek/PIAAC", force = T)
 library(PIAAC)
 
 
+##################
+# Saving
 write_csv(rbind(pisa_all, timss, pirls),
           "/Users/cimentadaj/Downloads/inequality/shiny/pisa.csv")
 
