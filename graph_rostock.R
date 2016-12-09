@@ -7,6 +7,7 @@ library(car)
 library(Hmisc)
 library(artyfarty)
 library(stringr)
+library(devtools)
 
 # 
 # ###### 2013 ###########
@@ -130,7 +131,7 @@ serce <- serce %>%
          peso_estudiante_lscore, peso_estudiante_mscore) %>%
   filter(!is.na(ses2) & !is.na(country)) %>%
   group_by(country, ses2) %>%
-  do(data.frame(score = quantile(.$puntaje_estandar_final_mscore, probs = seq(0, 1, 0.01), na.rm = T))) %>%
+  do(data.frame(score = quantile(.$puntaje_estandar_final_mscore, probs = seq(0, 100, 1), na.rm = T))) %>%
   ungroup(country, ses2) %>%
   mutate(rank = rep(0:100, length(unique(country)) * length(unique(ses2))),
          year = "2007",
@@ -152,8 +153,6 @@ library("PISA2012lite")
 parent_edu <- "MISCED|FISCED"
 edu_recode <- "1:3 = 1; 4:5 = 2; 6:7 = 3; else = NA"
 cnt <- "CNT"
-df <- student2012
-
 
 pisa_preparer <- function(df, parent_edu, edurecode, cnt) {
   
@@ -202,13 +201,14 @@ pisa_preparer <- function(df, parent_edu, edurecode, cnt) {
   # 9 Missing
   
   data <- df %>%
-    filter(!is.na(country) & !is.na(ses2)) %>%
-    do(pisa.per.pv("MATH", by = c("country", "ses2"), per = seq(0, 1, 0.05), data = .))
+    filter(!is.na(country) & !is.na(ses2))
+  
+  pv_data <- pisa.per.pv("MATH", by = c("country", "ses2"), per = seq(0, 100, 1), data = data)
 
-  data
+  pv_data
 }
 
-pisa <- lapply(c("math2000", paste0("student", seq(2003, 2012, by = 3))), function(x) {
+pisa2 <- lapply(c("math2000", paste0("student", seq(2003, 2012, by = 3))), function(x) {
   
   if (x == "math2000") cnt <- switch(cnt, "COUNTRY")
   df <- get(x)
@@ -219,6 +219,7 @@ pisa <- lapply(c("math2000", paste0("student", seq(2003, 2012, by = 3))), functi
   
   subset(data, select = c("country", "ses2", "Score", "year"))
 })
+pisa <- pisa2
 
 ###### country codes ########
 country_codes <- readLines(textConnection(
@@ -573,11 +574,16 @@ for (i in seq_along(country_names)) pisa_all$country <- string_replacer(country_
                                                                         country_names[i],
                                                                         pisa_all$country)
 pisa_all$country <- gsub("Honk", "Hong", pisa_all$country)
-pisa_all$country <- gsub("Slovak Republic", "Slovakia", pisa_all$country)
+pisa_all$country <- gsub("Slovakia", "Slovak Republic", pisa_all$country)
 
-pisa_all <- rbind(pisa_all, terce, serce)
+pisa_all <- pisa_all %>%
+  filter(!is.na(country)) %>%
+  group_by(year, country, ses2) %>%
+  mutate(rank = seq(0, 100, 1), score = Score) %>%
+  ungroup(year, country, ses2) %>%
+  select(-Score)
 
-write_csv(pisa_all, path = "/Users/cimentadaj/Downloads/inequality/shiny/pisa.csv")
+# pisa_all <- rbind(pisa_all, terce, serce)
 
 pisa_all %>%
   filter(country == "Belgium", year == "2009") %>%
@@ -612,10 +618,9 @@ ggsave("belgium.png", path = "/Users/cimentadaj/Downloads/inequality/shiny/www/"
 # Merge with the PIRLS and TIMSS datasets.
 # checkout why there's no variability in the quantiles of some countries.
 
-library(devtools)
-install_github("cimentadaj/intsvy", force = T)
-library(intsvy)
+#######################################
 
+## TIMSS
 # Download data from:
 # http://rms.iea-dpc.org/
 
@@ -646,12 +651,58 @@ subsetter <- function(df, vars, recode) {
   df
 }
 
+parent_edu_timss <- list("1995" = c("BSBGEDUM", "BSBGEDUF"),
+                         "1999" = c("BSBGEDMO", "BSBGEDFA"),
+                         "2003" = c("BSBGMFED", "BSBGFMED"),
+                         "2007" = c("BS4GMFED", "BS4GFMED"),
+                         "2011" = c("BSBG06A", "BSBG06B"))
+
+all_codings_timss <- c("0:2 = 1; 3:4 = 2; 5:6 = 3; 7 = NA",
+                       "0:3 = 1; 4:5 = 2; 6:7 = 3; 8 = NA",
+                       "0:3 = 1; 4:5 = 2; 6:8 = 3; 9 = NA",
+                       "0:2 = 1; 3:4 = 2; 5:7 = 3; 8 = NA",
+                       "0:2 = 1; 3:4 = 2; 5:7 = 3; 8 = NA")
+
+student_wrangler <- function(directories, parents_edu, codings, survey) {
+  stopifnot(!missing(survey))
+  
+  if (survey == "TIMSS") {
+    
+    list_df <- lapply(1:length(directories), function(i) {
+      dat <- timssg8.select.merge(directories[i], student = parents_edu[[i]])
+      dat <- subsetter(dat, parents_edu[[i]], codings[i])
+      dat$ses2 <- pmax(dat[, parents_edu[[i]][1]], dat[, parents_edu[[i]][2]], na.rm = T)
+      dat
+      
+    })
+  }
+  
+  
+  if (survey == "PIRLS") {
+    
+  list_df <- lapply(1:length(directories), function(i) {
+    dat <- pirls.select.merge(directories[i], home = parents_edu[[i]])
+    dat <- subsetter(dat, parents_edu[[i]], codings[i])
+    dat$ses2 <- pmax(dat[, parents_edu[[i]][1]], dat[, parents_edu[[i]][2]], na.rm = T)
+    dat
+    
+    })
+  }
+  
+  list_df
+}
+
+timss_list2 <- setNames(student_wrangler(dirs[grep("08", dirs)],
+                                     parent_edu_timss,
+                                     all_codings_timss,
+                                     survey = "TIMSS"),
+                        c("1995", "1999", "2003", "2007", "2011"))
+
 # See here for education coding:
 # http://ec.europa.eu/eurostat/documents/1978984/6037342/Comparability_ISCED_2011_ISCED_1997.pdf
 
+# Coding for 1995
 # g4_95 - parent's education wasn't asked
-edu_95 <- c("BSBGEDUM", "BSBGEDUF")
-g8_95 <- timssg8.select.merge(folder = years[[1]][2], student = edu_95)
 
 # 1 =  <finished primary school>
 # 2 =  <finished some secondary school>
@@ -661,13 +712,8 @@ g8_95 <- timssg8.select.merge(folder = years[[1]][2], student = edu_95)
 # 6 =  <finished university>
 # 7 =  I don’t know
 
-g8_95 <- subsetter(g8_95, edu_95, "0:2 = 1; 3:4 = 2; 5:6 = 3; 7 = NA")
-g8_95$ses2 <- big(g8_95, BSBGEDUM, BSBGEDUF)
-
-
+# Coding for 1999
 # g4_99 - parent's education wasn't asked
-edu_99 <- c("BSBGEDMO", "BSBGEDFA")
-g8_99 <- timssg8.select.merge(folder = years[[2]], student = edu_99)
 
 # 1 = <some primary school, or did not go to school>
 # 2 = <finished primary school>
@@ -678,12 +724,8 @@ g8_99 <- timssg8.select.merge(folder = years[[2]], student = edu_99)
 # 7 = <finished university>
 # 8 = <I don’t know>
 
-g8_99 <- subsetter(g8_99, edu_99, "0:3 = 1; 4:5 = 2; 6:7 = 3; 8 = NA")
-g8_99$ses2 <- big(g8_99, BSBGEDMO, BSBGEDFA)
-
+# Coding for 2003
 # g4_03 - parent's education wasn't asked
-edu_03 <- c("BSBGMFED", "BSBGFMED")
-g8_03 <- timssg8.select.merge(folder = years[[3]][2], student = edu_03)
 
 # 1 = Did not finish <ISCED 1> or did not go to school
 # 2 = <ISCED 1>
@@ -694,12 +736,9 @@ g8_03 <- timssg8.select.merge(folder = years[[3]][2], student = edu_03)
 # 7 = <ISCED 5A, first degree>
 # 8 = Beyond <ISCED 5A, first degree>
 # 9 = I don't know
-g8_03 <- subsetter(g8_03, edu_03, "0:3 = 1; 4:5 = 2; 6:8 = 3; 9 = NA")
-g8_03$ses2 <- big(g8_03, BSBGMFED, BSBGFMED)
 
+# Coding for 2007
 # g4_07 - parent's education wasn't asked
-edu_07 <- c("BS4GMFED", "BS4GFMED")
-g8_07 <- timssg8.select.merge(folder = years[[4]][2], student = edu_07)
 
 # 1 = Some <ISCED Level 1 or 2> or did not go to school                           
 # 2 = <ISCED 2>
@@ -710,13 +749,8 @@ g8_07 <- timssg8.select.merge(folder = years[[4]][2], student = edu_07)
 # 7 = <Beyond <ISCED 5A,  rst degree>
 # 8 = I don’t know
 
-g8_07 <- subsetter(g8_07, edu_07, "0:2 = 1; 3:4 = 2; 5:7 = 3; 8 = NA")
-g8_07$ses2 <- big(g8_07, BS4GMFED, BS4GFMED)
-
-
+# Coding for 2011
 # g4_11 <- timssg4.select.merge(folder = years[[5]][1],home = c("ASBH17A", "ASBH17B"))
-edu_11 <- c("BSBG06A", "BSBG06B")
-g8_11 <- timssg8.select.merge(folder = years[[5]][2], student = edu_11)
 
 # 1 = Some <ISCED Level 1 or 2 > or did not go to school
 # 2 = <ISCED Level 2>
@@ -727,16 +761,114 @@ g8_11 <- timssg8.select.merge(folder = years[[5]][2], student = edu_11)
 # 7 = Beyond <ISCED Level 5A, first degree>
 # 8 = I don’t know
 
-g8_11 <- subsetter(g8_11, edu_11, "0:2 = 1; 3:4 = 2; 5:7 = 3; 8 = NA")
-g8_11$ses2 <- big(g8_11, BSBG06A, BSBG06B)
-
-timss_list <- list("1995" = g8_95, "1999" = g8_99, "2003" = g8_03, "2007" = g8_07, "2011" = g8_11)
-
-timss_list <- lapply(timss_list, function(x) {
+timss_list <- lapply(1:length(timss_list), function(num) {
+  message("Data loaded correctly")
+  x <- timss_list[[num]]
   x$country <- as.character(x$IDCNTRYL)
   x$grade <- 8
   x <- subset(x, !is.na(ses2))
-  timss.per.pv(by = c("country", "ses2", "grade"), per = seq(0, 1, 0.05), data = x)
+  x$year <- names(timss_list)[num]
+  timss.per.pv(by = c("year", "country", "ses2", "grade"), per = seq(0, 100, 1), data = x)
 })
 
-timss <- do.call(rbind, timss_list)[c("country", "ses2", "Score")]
+timss <- do.call(rbind, timss_list)[c("country", "ses2", "Score", "year")]
+
+timss <- timss %>%
+  group_by(year, country, ses2) %>%
+  mutate(survey = "TIMSS", rank = seq(1, 100, 1)) %>%
+  ungroup(year, country, ses2) %>%
+  mutate(country = as.character(country),
+         year = as.character(year),
+         score = Score) %>%
+  select(-Score)
+
+
+############################
+
+# PIRLS
+
+pirls_dir <- "/Users/cimentadaj/Downloads/PIRLS/"
+years <- c("2001", "2006", "2011")
+pirls_dir2 <- paste0(pirls_dir, years, "/PIRLS/Grade 04/", "Y", years, "/Data/SPSS/")
+
+
+eduparent_list <- list("2001" = c("ASBHEDUF", "ASBHEDUM"),
+                       "2006" = c("ASBHLEDF", "ASBHLEDM"),
+                       "2011" = c("ASBH17A", "ASBH17B"))
+
+all_codings <- c("0:2 = 1; 3:6 = 2; 7:8 = 3; 9 = NA",
+                 "0:2 = 1; 3:4 = 2; 5:7 = 3; 8 = NA",
+                 "0:3 = 1; 4:5 = 2; 6:8 = 3; 9 = NA")
+
+pirls_list2 <- setNames(student_wrangler(pirls_dir2,
+                                         eduparent_list,
+                                         all_codings,
+                                         survey = "PIRLS"),
+                        c("2001", "2006", "2011"))
+
+# Just in case:
+
+# 2001 coding
+# 1 = Some <ISCED Level 1 or 2> or did not go to school
+# 2 = <ISCED Level 2>
+# 3 = <ISCED Level 3A or 3B>
+# 4 = <ISCED Level 3C>
+# 5 = <ISCED Level 4A>
+# 6 = <ISCED Level 4B>
+# 7 = <ISCED Level 5A> or higher
+# 8 = < ISCED Level 5B> or higher
+# 9 = Notapplicable
+
+# 2006 coding
+# 1 = Some <ISCED Level 1 or 2> or did not go to school
+# 2 = <ISCED Level 2>
+# 3 = <ISCED Level 3>
+# 4 = <ISCED Level 4>
+# 5 = <ISCED Level 5B>
+# 6 = <ISCED Level 5A, first degree>
+# 7 = Beyond <ISCED Level 5A, first degree>
+# 8 = Not applicable
+
+# 2011 coding
+# 1 = Did not go to school
+# 2 = Some <ISCED Level 1 or 2>
+# 3 = <ISCED Level 2>
+# 4 = <ISCED Level 3>
+# 5 = <ISCED Level 4>
+# 6 = <ISCED Level 5B>
+# 7 = <ISCED Level 5A, first degree>
+# 8 = Beyond <ISCED Level 5A, A first degree>
+# 9 = Not applicable
+
+pirls_list <- lapply(1:length(pirls_list), function(num) {
+  message("Data loaded correctly")
+  x <- pirls_list[[num]]
+  x$country <- as.character(x$IDCNTRYL)
+  x$grade <- 4
+  x <- subset(x, !is.na(ses2))
+  x$year <- names(pirls_list[num])
+  pirls.per.pv(by = c("year", "country", "ses2", "grade"), per = seq(0, 100, 1), data = x)
+})
+
+pirls <- do.call(rbind, pirls_list)[c("country", "ses2", "Score", "year", "Percentiles")]
+
+pirls <- pirls %>%
+  group_by(year, country, ses2) %>%
+  mutate(survey = "PIRLS") %>%
+  rename(rank = Percentiles) %>%
+  ungroup(year, country, ses2) %>%
+  mutate(country = as.character(country),
+         year = as.character(year),
+         score = Score) %>%
+  select(-Score)
+
+##################
+
+## PIAAC
+install_github("pbiecek/PIAAC", force = T)
+library(PIAAC)
+
+
+write_csv(rbind(pisa_all, timss, pirls),
+          "/Users/cimentadaj/Downloads/inequality/shiny/pisa.csv")
+
