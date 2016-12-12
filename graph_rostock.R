@@ -1,144 +1,155 @@
 # crude analysis of the correlation between average country performance and the average difference between private and public schools
 # everything is really dirty but there seems to be no correlation between the two, quite surprisingly.
 
+library(devtools)
+# install_github("cimentadaj/intsvy", force = T)
+# install_github("pbiecek/PIAAC", force = T)
+
 library(tidyverse)
 library(downloader)
 library(car)
 library(Hmisc)
 library(artyfarty)
 library(stringr)
-library(devtools)
+library(intsvy)
+library(foreign)
 
+
+
+# # # 
+# # # ###### 2013 ###########
+# # # Please check this link before running. This url depends heavily on folders and datasets which are
+# # # outline there.
+# # 
+# # llece <- "https://raw.githubusercontent.com/cimentadaj/LLECE/master/TERCE/Experimental%20TERCE.r"
+# # downloader::source_url(llece, sha = sha_url(llece))
+# # 
+# # terce <- terce("/Users/cimentadaj/Downloads/terce")
+# # 
+# # big <- function (data, var1, var2) {
+# #   attach(data)
+# #   out <- ifelse(is.na(var1) & is.na(var2), NA,
+# #                 ifelse(is.na(var1) & !is.na(var2), var2,
+# #                        ifelse(!is.na(var1) & is.na(var2), var1,
+# #                               ifelse(var1 > var2, var1, var2))))
+# #   detach(data)
+# #   out
+# # }
+# # 
+# # terce <- rename(terce,  sesp = dqfit09_01_family, sesm = dqfit09_02_family)
+# # 
+# # terce$ses <- big(terce, sesp, sesm)
+# # terce$ses2 <- car::recode(terce$ses, "1:2 = 1; 3:4 = 2; 5:6 = 3; 7 = NA")
+# # 
+# # terce$genero <- terce$genero - 1
+# # 
+# # terce$teacher_edu <- car::recode(terce$dqpit01_mteacher, "1:2 = 1; 3:4 = 2; 5:6 = 3; 7 = NA")
+# # terce$country <- car::recode(terce$country, "
+# #                              'ARG' = 'Argentina';
+# #                              'BRA' = 'Brazil';
+# #                              'CHL' = 'Chile';
+# #                              'COL' = 'Colombia';
+# #                              'CRI' = 'Costa Rica';
+# #                              'ECU' = 'Ecuador';
+# #                              'GTM' = 'Guatemala';
+# #                              'HON' = 'Honduras';
+# #                              'MEX' = 'Mexico';
+# #                              'NIC' = 'Nicaragua';
+# #                              'NLE' = 'Nuevo Leon (Mexico)';
+# #                              'PAN' = 'Panama';
+# #                              'PAR' = 'Paraguay';
+# #                              'PER' = 'Peru';
+# #                              'REP' = 'Dominican Republic';
+# #                              'URU' = 'Uruguay'")
+# # 
+# # terce <- terce %>%
+# #   select(ses2, country, puntaje_estandar_math, puntaje_estandar_language, wgm_math,
+# #          wgl_language) %>%
+# #   filter(!is.na(ses2) & !is.na(country)) %>%
+# #   group_by(country, ses2) %>%
+# #   do(data.frame(score = quantile(.$puntaje_estandar_math, probs = seq(0, 1, 0.01), na.rm = T))) %>%
+# #   ungroup(country, ses2) %>%
+# #   mutate(rank = rep(0:100, length(unique(country)) * length(unique(ses2))),
+# #          year = "2013",
+# #          survey = "LLECE")
+# # 
+# # # ###############
+# # # 
+# # # ##### 2007 #######
+# # # # load serce function
+# # 
 # 
-# ###### 2013 ###########
-# Please check this link before running. This url depends heavily on folders and datasets which are
-# outline there.
-
-llece <- "https://raw.githubusercontent.com/cimentadaj/LLECE/master/TERCE/Experimental%20TERCE.r"
-downloader::source_url(llece, sha = sha_url(llece))
-
-terce <- terce("/Users/cimentadaj/Downloads/terce")
-
-big <- function (data, var1, var2) {
-  attach(data)
-  out <- ifelse(is.na(var1) & is.na(var2), NA,
-                ifelse(is.na(var1) & !is.na(var2), var2,
-                       ifelse(!is.na(var1) & is.na(var2), var1,
-                              ifelse(var1 > var2, var1, var2))))
-  detach(data)
-  out
-}
-
-terce <- rename(terce,  sesp = dqfit09_01_family, sesm = dqfit09_02_family)
-
-terce$ses <- big(terce, sesp, sesm)
-terce$ses2 <- car::recode(terce$ses, "1:2 = 1; 3:4 = 2; 5:6 = 3; 7 = NA")
-
-terce$genero <- terce$genero - 1
-
-terce$teacher_edu <- car::recode(terce$dqpit01_mteacher, "1:2 = 1; 3:4 = 2; 5:6 = 3; 7 = NA")
-terce$country <- car::recode(terce$country, "
-                             'ARG' = 'Argentina';
-                             'BRA' = 'Brazil';
-                             'CHL' = 'Chile';
-                             'COL' = 'Colombia';
-                             'CRI' = 'Costa Rica';
-                             'ECU' = 'Ecuador';
-                             'GTM' = 'Guatemala';
-                             'HON' = 'Honduras';
-                             'MEX' = 'Mexico';
-                             'NIC' = 'Nicaragua';
-                             'NLE' = 'Nuevo Leon (Mexico)';
-                             'PAN' = 'Panama';
-                             'PAR' = 'Paraguay';
-                             'PER' = 'Peru';
-                             'REP' = 'Dominican Republic';
-                             'URU' = 'Uruguay'")
-
-terce <- terce %>%
-  select(ses2, country, puntaje_estandar_math, puntaje_estandar_language, wgm_math,
-         wgl_language) %>%
-  filter(!is.na(ses2) & !is.na(country)) %>%
-  group_by(country, ses2) %>%
-  do(data.frame(score = quantile(.$puntaje_estandar_math, probs = seq(0, 1, 0.01), na.rm = T))) %>%
-  ungroup(country, ses2) %>%
-  mutate(rank = rep(0:100, length(unique(country)) * length(unique(ses2))),
-         year = "2013",
-         survey = "LLECE")
-
-# ###############
+# serce_dir <- "https://raw.githubusercontent.com/cimentadaj/LLECE/master/SERCE/Exploratory_SERCE.R"
+# downloader::source_url(serce_dir, sha = sha_url(serce_dir))
 # 
-# ##### 2007 #######
-# # load serce function
-
-serce_dir <- "https://raw.githubusercontent.com/cimentadaj/LLECE/master/SERCE/Exploratory_SERCE.R"
-downloader::source_url(serce_dir, sha = sha_url(serce_dir))
-
-serce <- serce("/Users/cimentadaj/Downloads/serce/SERCE/")
-
-changer <- function(df, father, var_name) {
-  # GEt the logitcal data frame in which the education is located
-  logical_data <- df[grep(father, grep("qf_item_2_*", names(df), value = T), value = T)] == 1
-  # Pick the highest education towards the end of the data frame
-  df[var_name] <- max.col(logical_data, ties.method = "last")
-
-  # Many respondents had empty rows yet the max.col assigned
-  # them an education level. Let's assign an NA to those which had a row
-  # full of NOT 1's
-
-  row_logical <- apply(logical_data, 1, sum)
-  df[, var_name] <- ifelse(row_logical != 0, df[, var_name], NA)
-
-  df[, var_name]
-}
-
-serce$sesp <- changer(serce, "a_family", "sesp")
-serce$sesm <- changer(serce, "b_family", "sesm")
-
-big <- function (data, var1, var2) {
-  attach(data)
-  out <- ifelse(is.na(var1) & is.na(var2), NA,
-                ifelse(is.na(var1) & !is.na(var2), var2,
-                       ifelse(!is.na(var1) & is.na(var2), var1,
-                              ifelse(var1 > var2, var1, var2))))
-  detach(data)
-  out
-}
-
-serce$ses <- big(serce, sesp, sesm)
-serce$ses2 <- car::recode(as.numeric(serce$ses), "1:3 = 1; 4:5 = 2; 6:7 = 3")
-serce$country <- car::recode(serce$country, "
-                             '01' = 'Argentina';
-                             '03' = 'Brazil';
-                             '04' = 'Chile';
-                             '05' = 'Colombia';
-                             '06' = 'Costa Rica';
-                             '07' = 'Cuba';
-                             '08' = 'Ecuador';
-                             '09' = 'El Salvador';
-                             '11' = 'Guatemala';
-                             '12' = 'Mexico';
-                             '14' = 'Nicaragua';
-                             '16' = 'Panama';
-                             '17' = 'Paraguay';
-                             '18' = 'Peru';
-                             '19' = 'Dominican Republic';
-                             '20' = 'Uruguay';
-                             '21' = 'Nuevo Leon (Mexico)'")
-
-serce <- serce %>%
-  select(ses2, country, puntaje_estandar_final_lscore, puntaje_estandar_final_mscore,
-         peso_estudiante_lscore, peso_estudiante_mscore) %>%
-  filter(!is.na(ses2) & !is.na(country)) %>%
-  group_by(country, ses2) %>%
-  do(data.frame(score = quantile(.$puntaje_estandar_final_mscore, probs = seq(0, 100, 1), na.rm = T))) %>%
-  ungroup(country, ses2) %>%
-  mutate(rank = rep(0:100, length(unique(country)) * length(unique(ses2))),
-         year = "2007",
-         survey = "LLECE")
+# serce <- serce("/Users/cimentadaj/Downloads/serce/SERCE/")
 # 
-# ##############
+# changer <- function(df, father, var_name) {
+#   # GEt the logitcal data frame in which the education is located
+#   logical_data <- df[grep(father, grep("qf_item_2_*", names(df), value = T), value = T)] == 1
+#   # Pick the highest education towards the end of the data frame
+#   df[var_name] <- max.col(logical_data, ties.method = "last")
 # 
+#   # Many respondents had empty rows yet the max.col assigned
+#   # them an education level. Let's assign an NA to those which had a row
+#   # full of NOT 1's
+# 
+#   row_logical <- apply(logical_data, 1, sum)
+#   df[, var_name] <- ifelse(row_logical != 0, df[, var_name], NA)
+# 
+#   df[, var_name]
+# }
+# 
+# serce$sesp <- changer(serce, "a_family", "sesp")
+# serce$sesm <- changer(serce, "b_family", "sesm")
+# 
+# big <- function (data, var1, var2) {
+#   attach(data)
+#   out <- ifelse(is.na(var1) & is.na(var2), NA,
+#                 ifelse(is.na(var1) & !is.na(var2), var2,
+#                        ifelse(!is.na(var1) & is.na(var2), var1,
+#                               ifelse(var1 > var2, var1, var2))))
+#   detach(data)
+#   out
+# }
+# 
+# serce$ses <- big(serce, sesp, sesm)
+# serce$ses2 <- car::recode(as.numeric(serce$ses), "1:3 = 1; 4:5 = 2; 6:7 = 3")
+# serce$country <- car::recode(serce$country, "
+#                              '01' = 'Argentina';
+#                              '03' = 'Brazil';
+#                              '04' = 'Chile';
+#                              '05' = 'Colombia';
+#                              '06' = 'Costa Rica';
+#                              '07' = 'Cuba';
+#                              '08' = 'Ecuador';
+#                              '09' = 'El Salvador';
+#                              '11' = 'Guatemala';
+#                              '12' = 'Mexico';
+#                              '14' = 'Nicaragua';
+#                              '16' = 'Panama';
+#                              '17' = 'Paraguay';
+#                              '18' = 'Peru';
+#                              '19' = 'Dominican Republic';
+#                              '20' = 'Uruguay';
+#                              '21' = 'Nuevo Leon (Mexico)'")
+# 
+# serce <- serce %>%
+#   select(ses2, country, puntaje_estandar_final_lscore, puntaje_estandar_final_mscore,
+#          peso_estudiante_lscore, peso_estudiante_mscore) %>%
+#   filter(!is.na(ses2) & !is.na(country)) %>%
+#   group_by(country, ses2) %>%
+#   do(data.frame(score = quantile(.$puntaje_estandar_final_mscore, probs = seq(0, 100, 1), na.rm = T))) %>%
+#   ungroup(country, ses2) %>%
+#   mutate(rank = rep(0:100, length(unique(country)) * length(unique(ses2))),
+#          year = "2007",
+#          survey = "LLECE")
+# # 
+# # ##############
+# # 
+# 
+
+
 ############# PISA ############
 
 # for (i in paste0("pbiecek/PISA", c(2012, 2009, 2006, 2003, 2000), "lite")) install_github(i, force = T)
@@ -148,42 +159,38 @@ library("PISA2003lite")
 library("PISA2006lite")
 library("PISA2009lite")
 library("PISA2012lite")
-# For pisa 2000, CNT is COUNTRY
 
+pisa_2015 <- read.spss("/Users/cimentadaj/Downloads/PISA/CY6_MS_CMB_STU_QQQ.sav",
+                     use.value.labels = TRUE,
+                     to.data.frame = TRUE)
+
+ppisa2015 <- pisa_2015
+
+# For pisa 2000, CNT is COUNTRY 
 parent_edu <- "MISCED|FISCED"
 edu_recode <- "1:3 = 1; 4:5 = 2; 6:7 = 3; else = NA"
 cnt <- "CNT"
 
-pisa_preparer <- function(df, parent_edu, edurecode, cnt) {
+pisa_preparer <- function(df, parent_edu, edu_recode, cnt, pisa2015 = F, pisa2000 = F) {
+  if (pisa2000) cnt <- "COUNTRY"
   
-  # 
-  # grab_changer <- function(df, vars_select, father_edu, mother_edu) {
-  #   
-  #   select_calls <- sapply(vars_select, function(col) {
-  #     lazyeval::interp(~col_name, col_name = as.name(col))
-  #   })
-  #   
-  #   fathers_moms_call <- sapply(c(father_edu, mother_edu), function(col){
-  #     lazyeval::interp(~as.numeric(col_name), col_name = as.name(col))
-  #   })
-  #   
-  #   
-  #   df %>%
-  #     select_(.dots = select_calls) %>%
-  #     mutate_(.dots = setNames(fathers_moms_call, c("mom_isced", "dad_isced"))) %>%
-  #     rename(country = CNT)
-  #   
-  # }
-  # 
-  # pisa_complete <- grab_changer(df, vars_select, father_edu, mother_edu)
-  # 
-  
+  if (pisa2015) {
+    
+    df <- base::subset(df, !is.na(HISCED))
+    df[, "country"] <- as.character(df[, cnt])
+    df$ses2 <- car::recode(as.numeric(df[, "HISCED"]), edu_recode)
+
+    pv_data <- pisa2015.per.pv("MATH", by = c("country", "ses2"), per = seq(0, 100, 1), data = df)
+    
+    return(pv_data)
+  }
   
   names(df)[grep(parent_edu, names(df))] <- c("dad_isced", "mom_isced")
-  df[, "country"] <- df[, cnt]
+  df[, "country"] <- as.character(df[, cnt])
   
   df$ses <- pmax(as.numeric(df$mom_isced), as.numeric(df$dad_isced), na.rm = T)
   df$ses2 <- car::recode(df$ses, edu_recode)
+  
   # PQFISCED - father edu
   # 0 None
   # 1 ISCED 3A 
@@ -200,26 +207,32 @@ pisa_preparer <- function(df, parent_edu, edurecode, cnt) {
   # 4 ISCED 5A, 6 
   # 9 Missing
   
-  data <- df %>%
-    filter(!is.na(country) & !is.na(ses2))
+  data <- subset(df, !is.na("country") & !is.na("ses2"))
   
   pv_data <- pisa.per.pv("MATH", by = c("country", "ses2"), per = seq(0, 100, 1), data = data)
 
   pv_data
 }
 
-pisa2 <- lapply(c("math2000", paste0("student", seq(2003, 2012, by = 3))), function(x) {
+system.time(
+pisa2 <- lapply(c("ppisa2015", "math2000", paste0("student", seq(2003, 2012, by = 3))), function(x) {
   
-  if (x == "math2000") cnt <- switch(cnt, "COUNTRY")
+  pisa2015 <- ifelse(x == "ppisa2015", T, F)
+  pisa2000 <- ifelse(x == "math2000", T, F)
+  
   df <- get(x)
   message("Data loaded correctly")
-  data <- pisa_preparer(df, parent_edu, edu_recode)
+  data <- pisa_preparer(df, parent_edu, edu_recode, cnt, pisa2015, pisa2000)
   data$year <- gsub("[a-z]", "", x)
   data$country <- as.character(data$country)
   
-  subset(data, select = c("country", "ses2", "Score", "year"))
-})
+  data <- subset(data, select = c("country", "ses2", "Score", "year"))
+  data
+}))
+
 pisa <- pisa2
+
+pisa <- setNames(pisa, sapply(pisa, function(x) unique(x$year)))
 
 ###### country codes ########
 country_codes <- readLines(textConnection(
@@ -457,13 +470,13 @@ country_codes <- readLines(textConnection(
   Ukraine	UA	UKR	804
   United Arab Emirates	AE	ARE	784
   United Kingdom	GB	GBR	826
-  United States of America	US	USA	840
+  United States	US	USA	840
   United States Minor Outlying Islands	UM	UMI	581
   Uruguay	UY	URY	858
   Uzbekistan	UZ	UZB	860
   Vanuatu	VU	VUT	548
   Venezuela (Bolivarian Republic of)	VE	VEN	862
-  Viet Nam	VN	VNM	704
+  Vietnam	VN	VNM	704
   Virgin Islands, US	VI	VIR	850
   Wallis and Futuna Islands	WF	WLF	876
   Western Sahara	EH	ESH	732
@@ -479,7 +492,7 @@ country_codes <- trimws(country_codes)
 names <- do.call(rbind, strsplit(country_codes, "\t"))[, c(1,3)]
 country_search <- setNames(names[, 1], names[, 2])
 
-pisa[2:3] <- lapply(pisa[2:3], function(x) {
+pisa[3:4] <- lapply(pisa[3:4], function(x) {
   x$country <- country_search[x$country]
   x
 })
@@ -495,7 +508,7 @@ capital <- function(vec) {
   cap_names
 }
 
-pisa[[1]]$country <- capital(pisa[[1]]$country)
+pisa[[2]]$country <- capital(pisa[[2]]$country)
 
 # PISA is ready. TERCE is still missing to be rbinded. SERCE is still lacking the country
 # specification instead of the numbers. PIRLS and TIMMSS are still missing.
@@ -570,9 +583,10 @@ string_replacer <- function(pattern, replacement, vec) {
   vec
 }
 
-for (i in seq_along(country_names)) pisa_all$country <- string_replacer(country_names[i],
-                                                                        country_names[i],
-                                                                        pisa_all$country)
+# for (i in seq_along(country_names)) pisa_all$country <- string_replacer(country_names[i],
+#                                                                         country_names[i],
+#                                                                         pisa_all$country)
+
 pisa_all$country <- gsub("Honk", "Hong", pisa_all$country)
 pisa_all$country <- gsub("Slovakia", "Slovak Republic", pisa_all$country)
 
@@ -583,10 +597,8 @@ pisa_all <- pisa_all %>%
   ungroup(year, country, ses2) %>%
   select(-Score)
 
-# pisa_all <- rbind(pisa_all, terce, serce)
-
 pisa_all %>%
-  filter(country == "Belgium", year == "2009") %>%
+  filter(country == "Belgium", year == "2009", !is.na(ses2)) %>%
   mutate(ses2 = as.factor(ses2)) %>%
   ggplot(aes(score, rank, colour = as.factor(ses2))) +
   geom_point(alpha = 0.7, size = 2) +
@@ -626,13 +638,13 @@ ggsave("belgium.png", path = "/Users/cimentadaj/Downloads/inequality/shiny/www/"
 
 # Let's create the directories where all the TIMSS data is
 
-tims_dir <- "/Users/cimentadaj/Downloads/TIMSS"
+timss_dir <- "/Users/cimentadaj/Downloads/TIMSS"
 years <- as.character(c(1995, 1999, 2003, 2007, 2011)) # years available
 grade <- rep(c("Grade 04", "Grade 08"), times = length(years)) # grades available
 fl_year <- paste0("Y", years) # part of path
 
 # Construct the path with all of the above and sort it so the first year is first
-dirs <- sort(paste(paste(tims_dir, years, sep = "/"), grade, fl_year, "Data/SPSS/", sep = "/"))
+dirs <- sort(paste(paste(timss_dir, years, sep = "/"), grade, fl_year, "Data/SPSS/", sep = "/"))
 
 dirs <- dirs[dir.exists(dirs)] # Check which path exists and only subset those which exist
                                # For example, 1999 only has 8th grade, so one path will be excluded.
@@ -651,6 +663,37 @@ subsetter <- function(df, vars, recode) {
   df
 }
 
+student_wrangler <- function(directories, parents_edu, codings, survey) {
+  stopifnot(!missing(survey))
+  
+  if (survey == "TIMSS") {
+    message("Working on TIMSS")
+    list_df <- lapply(1:length(directories), function(i) {
+      dat <- timssg8.select.merge(directories[i], student = parents_edu[[i]])
+      message("Data succesfuly obtained")
+      dat <- subsetter(dat, parents_edu[[i]], codings[i])
+      dat$ses2 <- pmax(dat[, parents_edu[[i]][1]], dat[, parents_edu[[i]][2]], na.rm = T)
+      dat
+      
+    })
+  }
+  
+  
+  if (survey == "PIRLS") {
+    message("Working on PIRLS")
+    list_df <- lapply(1:length(directories), function(i) {
+      dat <- pirls.select.merge(directories[i], home = parents_edu[[i]])
+      message("Data succesfuly obtained")
+      dat <- subsetter(dat, parents_edu[[i]], codings[i])
+      dat$ses2 <- pmax(dat[, parents_edu[[i]][1]], dat[, parents_edu[[i]][2]], na.rm = T)
+      dat
+      
+    })
+  }
+  
+  list_df
+}
+
 parent_edu_timss <- list("1995" = c("BSBGEDUM", "BSBGEDUF"),
                          "1999" = c("BSBGEDMO", "BSBGEDFA"),
                          "2003" = c("BSBGMFED", "BSBGFMED"),
@@ -663,36 +706,7 @@ all_codings_timss <- c("0:2 = 1; 3:4 = 2; 5:6 = 3; 7 = NA",
                        "0:2 = 1; 3:4 = 2; 5:7 = 3; 8 = NA",
                        "0:2 = 1; 3:4 = 2; 5:7 = 3; 8 = NA")
 
-student_wrangler <- function(directories, parents_edu, codings, survey) {
-  stopifnot(!missing(survey))
-  
-  if (survey == "TIMSS") {
-    
-    list_df <- lapply(1:length(directories), function(i) {
-      dat <- timssg8.select.merge(directories[i], student = parents_edu[[i]])
-      dat <- subsetter(dat, parents_edu[[i]], codings[i])
-      dat$ses2 <- pmax(dat[, parents_edu[[i]][1]], dat[, parents_edu[[i]][2]], na.rm = T)
-      dat
-      
-    })
-  }
-  
-  
-  if (survey == "PIRLS") {
-    
-  list_df <- lapply(1:length(directories), function(i) {
-    dat <- pirls.select.merge(directories[i], home = parents_edu[[i]])
-    dat <- subsetter(dat, parents_edu[[i]], codings[i])
-    dat$ses2 <- pmax(dat[, parents_edu[[i]][1]], dat[, parents_edu[[i]][2]], na.rm = T)
-    dat
-    
-    })
-  }
-  
-  list_df
-}
-
-timss_list2 <- setNames(student_wrangler(dirs[grep("08", dirs)],
+timss_list <- setNames(student_wrangler(dirs[grep("08", dirs)],
                                      parent_edu_timss,
                                      all_codings_timss,
                                      survey = "TIMSS"),
@@ -771,11 +785,11 @@ timss_list <- lapply(1:length(timss_list), function(num) {
   timss.per.pv(by = c("year", "country", "ses2", "grade"), per = seq(0, 100, 1), data = x)
 })
 
-timss <- do.call(rbind, timss_list)[c("country", "ses2", "Score", "year")]
+timss <- do.call(rbind, timss_list)[c("country", "ses2", "Score", "year", "grade")]
 
 timss <- timss %>%
   group_by(year, country, ses2) %>%
-  mutate(survey = "TIMSS", rank = seq(1, 100, 1)) %>%
+  mutate(survey = "TIMSS", rank = seq(0, 100, 1)) %>%
   ungroup(year, country, ses2) %>%
   mutate(country = as.character(country),
          year = as.character(year),
@@ -800,7 +814,7 @@ all_codings <- c("0:2 = 1; 3:6 = 2; 7:8 = 3; 9 = NA",
                  "0:2 = 1; 3:4 = 2; 5:7 = 3; 8 = NA",
                  "0:3 = 1; 4:5 = 2; 6:8 = 3; 9 = NA")
 
-pirls_list2 <- setNames(student_wrangler(pirls_dir2,
+pirls_list <- setNames(student_wrangler(pirls_dir2,
                                          eduparent_list,
                                          all_codings,
                                          survey = "PIRLS"),
@@ -850,7 +864,7 @@ pirls_list <- lapply(1:length(pirls_list), function(num) {
   pirls.per.pv(by = c("year", "country", "ses2", "grade"), per = seq(0, 100, 1), data = x)
 })
 
-pirls <- do.call(rbind, pirls_list)[c("country", "ses2", "Score", "year", "Percentiles")]
+pirls <- do.call(rbind, pirls_list)[c("country", "ses2", "Score", "year", "Percentiles", "grade")]
 
 pirls <- pirls %>%
   group_by(year, country, ses2) %>%
@@ -864,13 +878,25 @@ pirls <- pirls %>%
 
 ##################
 
-## PIAAC
-install_github("pbiecek/PIAAC", force = T)
-library(PIAAC)
+# PIAAC doesn't have a function to calculate percentiles
 
+## PIAAC
+# install_github("pbiecek/PIAAC", force = T)
+# library(PIAAC)
+# data(piaac)
+# 
+# piaac$ses2 <- pmax(as.numeric(piaac$J_Q07B), as.numeric(piaac$J_Q06B), na.rm = T)
 
 ##################
 # Saving
-write_csv(rbind(pisa_all, timss, pirls),
+
+all_surveys <- lapply(c("pisa_all", "timss", "pirls"), function(x) {
+  data <- get(x)
+  data <- data[order(names(data))]
+  data <- data[!is.na(data$ses2), grep("grade", names(data), inv = T)]
+  data
+})
+
+write_csv(do.call(rbind, all_surveys),
           "/Users/cimentadaj/Downloads/inequality/shiny/pisa.csv")
 
