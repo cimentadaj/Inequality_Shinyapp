@@ -77,7 +77,14 @@ ui <- tabsetPanel(
                            column(3,
                            uiOutput('input3'))),
                            hr(),
-                           mainPanel(plotOutput("graph", width = 1200, height = 600)))),
+                           mainPanel(fluidRow(
+                             splitLayout(cellWidths = c("100%", "55%"), plotOutput("graph", height = 600),
+                                         verbatimTextOutput("diff")
+                                                )
+                                              )
+                                            )
+                                          )
+                                        ),
         tabPanel("Compare two countries",
                  fluidPage(
                   fluidRow(column(2, 
@@ -164,6 +171,47 @@ server <- # Define server logic required to draw a histogram
       pisa1 <- pisa %>%
         filter(survey == input$survey, country == input$country, year == input$year)
       pisa1
+    })
+    
+    output$diff <- renderText({
+      
+      data_filtered <- filtered() %>%
+          filter(rank == 90) %>%
+          select(score)
+      
+      data_filtered2 <- filtered() %>%
+        filter(rank == 50) %>%
+        select(score)
+      
+      data_filtered3 <- filtered() %>%
+        filter(rank == 25) %>%
+        select(score)
+      
+    highdiff <- round(as.numeric(scale(data_filtered$score)), 2)
+    middiff <- round(as.numeric(scale(data_filtered2$score)), 2)
+    lowdiff <- round(as.numeric(scale(data_filtered3$score)), 2)
+      
+    paste("The 90th rank from the high educated has",
+          (diff <- highdiff[3] - highdiff[2]), "\n",
+          "standard deviations", ifelse(diff > 0, "higher", "lower"),
+          "than the 90th rank", "\n", "from middle educated and",
+          (diff <- highdiff[3] - highdiff[1]), "standard deviations ", "\n",
+          ifelse(diff > 0, "higher", "lower"), "than the 90th rank from the lower educated.",
+          "\n", "\n",
+          "The 50th rank from the high educated has",
+          (diff <- middiff[3] - middiff[2]), "\n",
+          "standard deviations", ifelse(diff > 0, "higher", "lower"),
+          "than the 50th rank", "\n", "from middle educated and",
+          (diff <- middiff[3] - middiff[1]), "standard deviations ", "\n",
+          ifelse(diff > 0, "higher", "lower"), "than the 50th rank from the lower educated",
+          "\n", "\n",
+          "The 25th rank from the high educated has",
+          (diff <- lowdiff[3] - lowdiff[2]), "\n",
+          "standard deviations", ifelse(diff > 0, "higher", "lower"),
+          "than the 25th rank", "\n", "from middle educated and",
+          (diff <- lowdiff[3] - lowdiff[1]), "standard deviations ", "\n",
+          ifelse(diff > 0, "higher", "lower"), "than the 25th rank from the lower educated")
+    
     })
     
     filtered2 <- reactive({

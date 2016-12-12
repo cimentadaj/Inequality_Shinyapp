@@ -900,3 +900,9 @@ all_surveys <- lapply(c("pisa_all", "timss", "pirls"), function(x) {
 write_csv(do.call(rbind, all_surveys),
           "/Users/cimentadaj/Downloads/inequality/shiny/pisa.csv")
 
+pisa2 <- pisa %>%
+  group_by(survey, country, year, ses2) %>%
+  mutate(score_sd = scale(score))
+
+write_csv(pisa2,
+          "/Users/cimentadaj/Downloads/inequality/shiny/pisa.csv")
