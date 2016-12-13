@@ -3,8 +3,6 @@ title:
 account: cimentadaj
 server: shinyapps.io
 appId: 143748
-bundleId: 643404
+bundleId: 645523
 url: https://cimentadaj.shinyapps.io/shiny/
-when: 1481396051.30611
-asMultiple: FALSE
-asStatic: FALSE
+when: 1481561210.91351
