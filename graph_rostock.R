@@ -897,12 +897,28 @@ all_surveys <- lapply(c("pisa_all", "timss", "pirls"), function(x) {
   data
 })
 
-write_csv(do.call(rbind, all_surveys),
-          "/Users/cimentadaj/Downloads/inequality/shiny/pisa.csv")
+country_search <- c(
+  "Hong Kong-China" = "Hong Kong",
+  "Hong Kong, Special Administrative Region of China" = "Hong Kong",
+  "Korea, Republic of" = "Korea",
+  "Korea, Republic Of" = "Korea",
+  "Macao-China" = "Macao",
+  "Macao, Special Administrative Region of China" = "Macao",
+  "Shanghai-China" = "China-Shanghai",
+  "Spain (Regions)" = "Spain",
+  "United States of America" = "United States",
+  "Andalusia, Spain" = "Andalusia (Spain)",
+  "Dubai,UAE" = "Dubai, UAE",
+  "Hong Kong SAR" = "Hong Kong",
+  "Maltese-Malta" = "Malta",
+  "Morocco 6" = "Morocco",
+  "Basque Country, Spain" = "Basque Country (Spain)",
+  "Korea,Rep.of" = "Korea",
+  "Palestinian" = "Palestine"
+)
 
-pisa2 <- pisa %>%
-  group_by(survey, country, year, ses2) %>%
-  mutate(score_sd = scale(score))
+all_data <- do.call(rbind, all_surveys)
+all_data$country <- str_replace_all(all_data$country, country_search)
 
-write_csv(pisa2,
-          "/Users/cimentadaj/Downloads/inequality/shiny/pisa.csv")
+write_csv(all_data,
+          "/Users/cimentadaj/Downloads/inequality/shiny/all_data.csv")
