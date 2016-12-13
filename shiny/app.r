@@ -1,10 +1,9 @@
 library(shiny)
 library(shinythemes)
-library(shiny)
 library(tidyverse)
 library(artyfarty)
 
-pisa <- read_csv("pisa.csv", col_names = T)
+all_data <- read_csv("all_data.csv", col_names = T)
 
 ## Add save plot button
 
@@ -34,12 +33,9 @@ ui <- tabsetPanel(
         
         p("This app depicts the current level of inequality for any given country
            in some specific years. The database was constructed by merging all available",
-          a("PISA", href = "http://www.oecd.org/pisa/aboutpisa/"), "waves,
+          a("PISA", href = "http://www.oecd.org/pisa/aboutpisa/"), "waves and
            all available",
-          a("PIRLS and TIMSS", href = "http://timssandpirls.bc.edu/about.html"),
-          "waves, and all available",
-          a("LLECE", href = "http://www.unesco.org/new/en/santiago/education/education-assessment-llece/"),
-          "waves.", align = align),
+          a("PIRLS and TIMSS", href = "http://timssandpirls.bc.edu/about.html"), "waves"),
         p("The theoretical argument behind this graph comes from the work of John Roemer while the artistic
           idea behind the graph comes from Bradbury, Corak, Waldfogel and Washbrook (2015)."),
         p("In any given country,
@@ -119,47 +115,47 @@ server <- # Define server logic required to draw a histogram
     
     output$input1 <- renderUI({
       selectInput("survey", label = "Select the survey",
-                  choices = sort(unique(pisa$survey)))
+                  choices = sort(unique(all_data$survey)))
     })
     
     output$input2 <- renderUI({
       selectInput("country", label = "Select the country",
-                  choices = sort(unique(subset(pisa, survey == input$survey)$country)))
+                  choices = sort(unique(subset(all_data, survey == input$survey)$country)))
     })
     
     output$input3 <- renderUI({
       selectInput("year", label = "Pick the year",
-                  choices = sort(unique(subset(pisa, survey == input$survey & country == input$country )$year)))
+                  choices = sort(unique(subset(all_data, survey == input$survey & country == input$country )$year)))
     })
     
     output$input4 <- renderUI({
       selectInput("survey2", label = "Select the survey",
-                  choices = sort(unique(pisa$survey)))
+                  choices = sort(unique(all_data$survey)))
     })
     
     output$input5 <- renderUI({
       selectInput("country2", label = "Select the country",
-                  choices = sort(unique(subset(pisa, survey == input$survey2)$country)))
+                  choices = sort(unique(subset(all_data, survey == input$survey2)$country)))
     })
     
     output$input6 <- renderUI({
       selectInput("year2", label = "Pick the year",
-                  choices = sort(unique(subset(pisa, survey == input$survey2 & country == input$country2 )$year)))
+                  choices = sort(unique(subset(all_data, survey == input$survey2 & country == input$country2 )$year)))
     })
     
     output$input7 <- renderUI({
       selectInput("survey3", label = "Select the survey",
-                  choices = sort(unique(pisa$survey)))
+                  choices = sort(unique(all_data$survey)))
     })
     
     output$input8 <- renderUI({
       selectInput("country3", label = "Select the country",
-                  choices = sort(unique(subset(pisa, survey == input$survey3)$country)))
+                  choices = sort(unique(subset(all_data, survey == input$survey3)$country)))
     })
     
     output$input9 <- renderUI({
       selectInput("year3", label = "Pick the year",
-                  choices = sort(unique(subset(pisa, survey == input$survey3 & country == input$country3 )$year)))
+                  choices = sort(unique(subset(all_data, survey == input$survey3 & country == input$country3 )$year)))
     })
     
     
@@ -168,9 +164,9 @@ server <- # Define server logic required to draw a histogram
         return(NULL)
       }
       
-      pisa1 <- pisa %>%
+      all_data1 <- all_data %>%
         filter(survey == input$survey, country == input$country, year == input$year)
-      pisa1
+      all_data1
     })
     
     output$diff <- renderText({
@@ -219,9 +215,9 @@ server <- # Define server logic required to draw a histogram
         return(NULL)
       }
       
-      pisa2 <- pisa %>%
+      all_data2 <- all_data %>%
         filter(survey == input$survey2, country == input$country2, year == input$year2)
-      pisa2
+      all_data2
     })
     
     filtered3 <- reactive({
@@ -229,9 +225,9 @@ server <- # Define server logic required to draw a histogram
         return(NULL)
       }
       
-      pisa3 <- pisa %>%
+      all_data3 <- all_data %>%
         filter(survey == input$survey3, country == input$country3, year == input$year3)
-      pisa3
+      all_data3
     })
     
     ineq_graph <- reactive({
