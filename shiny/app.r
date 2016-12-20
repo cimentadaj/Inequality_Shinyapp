@@ -4,6 +4,8 @@ library(tidyverse)
 library(artyfarty)
 
 all_data <- read_csv("all_data.csv", col_names = T)
+# This link outlines which countries participated in PIRLS for which grades:
+# http://timssandpirls.bc.edu/timss2011/downloads/T11_IR_M_AppendixA.pdf
 
 ## Add save plot button
 
