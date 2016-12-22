@@ -76,10 +76,12 @@ ui <- tabsetPanel(
                            uiOutput('input3'))),
                            hr(),
                            mainPanel(fluidRow(
-                             splitLayout(cellWidths = c("100%", "55%"), plotOutput("graph", height = 600),
-                                         verbatimTextOutput("diff")
+                             splitLayout(cellWidths = c("95%", "55%"),
+                                         plotOutput("graph", height = 600), # First graph on the right
+                                         verbatimTextOutput("diff") # Box with standard deviation diff
                                                 )
-                                              )
+                                              ),
+                             downloadButton("save_plot", "Click here to download plot")
                                             )
                                           )
                                         ),
@@ -196,6 +198,7 @@ server <- # Define server logic required to draw a histogram
           (diff <- highdiff[3] - highdiff[1]), "standard deviations ", "\n",
           ifelse(diff > 0, "higher", "lower"), "than the 90th rank from the lower educated.",
           "\n", "\n",
+          
           "The 50th rank from the high educated has",
           (diff <- middiff[3] - middiff[2]), "\n",
           "standard deviations", ifelse(diff > 0, "higher", "lower"),
@@ -203,6 +206,7 @@ server <- # Define server logic required to draw a histogram
           (diff <- middiff[3] - middiff[1]), "standard deviations ", "\n",
           ifelse(diff > 0, "higher", "lower"), "than the 50th rank from the lower educated",
           "\n", "\n",
+          
           "The 25th rank from the high educated has",
           (diff <- lowdiff[3] - lowdiff[2]), "\n",
           "standard deviations", ifelse(diff > 0, "higher", "lower"),
@@ -237,7 +241,7 @@ server <- # Define server logic required to draw a histogram
         return(NULL)
       }
       
-      ggplot(filtered(), aes(score, rank, colour = as.factor(ses2))) +
+      ineq_graph_save <- ggplot(filtered(), aes(score, rank, colour = as.factor(ses2))) +
         geom_point(alpha = 0.7, size = 3) +
         ylab("Student ranking") +
         xlab("Math test score") +
@@ -256,6 +260,8 @@ server <- # Define server logic required to draw a histogram
               axis.title=element_text(size=18,face="bold"),
               legend.text=element_text(size=14),
               legend.title = element_text(size=14))
+      
+      ineq_graph_save
     })
     
     ineq_graph2 <- reactive({
@@ -309,6 +315,12 @@ server <- # Define server logic required to draw a histogram
               legend.text=element_text(size=14),
               legend.title = element_text(size=14))
     })
+    
+    output$save_plot <- downloadHandler(
+      filename = function() { paste0(input$survey, "_", input$country, "_", input$year, ".png")},
+      content = function(file) {
+        ggsave(file, plot = ineq_graph(), device = 'png', width = 14)
+      })
     
     output$graph <- renderPlot({
       ineq_graph()
