@@ -623,7 +623,7 @@ pisa_all %>%
         legend.text=element_text(size=14),
         legend.title = element_text(size=14))
 
-ggsave("belgium.png", path = "/Users/cimentadaj/Downloads/inequality/shiny/www/")
+ggsave("belgium.png", path = "/Users/cimentadaj/Downloads/Inequality_Shinyapp/shiny/www")
 
 # Fix the scaling of the score variable to make it comparable across surveys
 # Find out how to properly measure the weighted quantiles or the summary score
