@@ -160,7 +160,7 @@ library("PISA2006lite")
 library("PISA2009lite")
 library("PISA2012lite")
 
-pisa_2015 <- read.spss("/Users/cimentadaj/Downloads/PISA/CY6_MS_CMB_STU_QQQ.sav",
+pisa_2015 <- read.spss("/Users/cimentadaj/Downloads/PISA/PISA2015/CY6_MS_CMB_STU_QQQ.sav",
                      use.value.labels = TRUE,
                      to.data.frame = TRUE)
 
@@ -214,8 +214,9 @@ pisa_preparer <- function(df, parent_edu, edu_recode, cnt, pisa2015 = F, pisa200
   pv_data
 }
 
-system.time(
-pisa2 <- lapply(c("ppisa2015", "math2000", paste0("student", seq(2003, 2012, by = 3))), function(x) {
+
+pisa2 <- lapply(c("ppisa2015", "math2000", paste0("student", seq(2003, 2012, by = 3))),
+                function(x) {
   
   pisa2015 <- ifelse(x == "ppisa2015", T, F)
   pisa2000 <- ifelse(x == "math2000", T, F)
@@ -228,7 +229,8 @@ pisa2 <- lapply(c("ppisa2015", "math2000", paste0("student", seq(2003, 2012, by 
   
   data <- subset(data, select = c("country", "ses2", "Score", "year"))
   data
-}))
+})
+# 2804 second or 46 mins
 
 pisa <- pisa2
 
@@ -511,7 +513,7 @@ capital <- function(vec) {
 pisa[[2]]$country <- capital(pisa[[2]]$country)
 
 # PISA is ready. TERCE is still missing to be rbinded. SERCE is still lacking the country
-# specification instead of the numbers. PIRLS and TIMMSS are still missing.
+# specification instead of the numbers.
 
 pisa_all <- do.call(rbind, pisa)
 pisa_all$survey <- "PISA"
